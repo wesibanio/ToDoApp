@@ -37,5 +37,10 @@
         android:inputType="textCapSentences|textAutoCorrect|textMultiLine"
         android:lines="5" />
 
+    <DatePicker
+        android:id="@+id/dueDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"></DatePicker>
+
 </LinearLayout>
 

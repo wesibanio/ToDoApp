@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AdapterView;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ListView;
 
@@ -26,7 +27,10 @@ import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
     private List<ToDoItem> ToDoItemList;
@@ -107,24 +111,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && requestCode == ADD_NOTE_REQ_CODE) {
-
-            Bundle extras = data.getExtras();
-            if (extras == null) {
-                return;
-            }
-
-            String newHeader = extras.getString(String.valueOf(R.id.headerText));
-            String newBody = extras.getString(String.valueOf(R.id.bodyText));
-            ToDoItemList.add(new ToDoItem(newHeader, newBody));
-            adapter.notifyDataSetChanged();
-
-        }
-    }
-
-    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -160,7 +146,6 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent();
                 EditText headerView = (EditText) dialog.findViewById(R.id.headerText);
                 EditText bodyView = (EditText) dialog.findViewById(R.id.bodyText);
 
@@ -171,12 +156,27 @@ public class MainActivity extends AppCompatActivity {
                     newHeader = "No Subject";
                     if (newBody.equals("")) {
                         dialog.cancel();
+                        return;
                     }
                 }
-                ToDoItemList.add(new ToDoItem(newHeader, newBody));
+
+                DatePicker dateView = (DatePicker) dialog.findViewById(R.id.dueDate);
+
+                Calendar cal = Calendar.getInstance();
+                cal.set(dateView.getYear(), dateView.getMonth(), dateView.getDayOfMonth());
+
+                ToDoItemList.add(new ToDoItem(newHeader, newBody, cal.getTime()));
                 adapter.notifyDataSetChanged();
                 dialog.cancel();
 
+            }
+        });
+        FloatingActionButton fab2 = (FloatingActionButton) dialog.findViewById(R.id.fab2);
+        fab2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.cancel();
+                return;
             }
         });
     }
