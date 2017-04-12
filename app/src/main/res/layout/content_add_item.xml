@@ -25,7 +25,7 @@
         android:gravity="bottom"
         android:hint="@string/headertHint"
         android:imeOptions="actionNext"
-        android:inputType="textCapSentences|textAutoCorrect|textMultiLine"
+        android:inputType="textCapSentences|textAutoCorrect"
         android:lines="1" />
 
     <EditText

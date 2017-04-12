@@ -10,7 +10,7 @@ import java.util.Date;
  */
 
 public class ToDoItem implements Serializable {
-    private static final SimpleDateFormat  timeFormat = new SimpleDateFormat("dd-MM-yy HH:mm:ss");
+    private static final SimpleDateFormat  timeFormat = new SimpleDateFormat("HH:mm:ss\ndd-MM-yy");
     private String createdTime;
     private boolean isChecked;
     private String header;
@@ -33,6 +33,10 @@ public class ToDoItem implements Serializable {
 
     public boolean isChecked() {
         return isChecked;
+    }
+
+    public void setChecked(boolean isChecked) {
+        this.isChecked = isChecked;
     }
 
     public String getHeader() {
