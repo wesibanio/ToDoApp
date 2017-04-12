@@ -14,7 +14,6 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     android:theme="@style/Theme.Transparent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.example.nisan.todoapp.add_item"
     tools:showIn="@layout/activity_add_item">
 
     <EditText

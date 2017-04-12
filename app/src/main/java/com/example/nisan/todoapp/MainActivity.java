@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ListView;
 
 import com.google.android.gms.appindexing.Action;
@@ -50,10 +51,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                //        .setAction("Action", null).show();
-                Intent intent = new Intent(MainActivity.this, add_item.class);
-                startActivityForResult(intent, ADD_NOTE_REQ_CODE);
+                startAddDialog();
             }
         });
 
@@ -138,8 +136,9 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         if (id == R.id.action_add) {
-            Intent intent = new Intent(MainActivity.this, add_item.class);
-            startActivityForResult(intent, ADD_NOTE_REQ_CODE);
+            startAddDialog();
+            //Intent intent = new Intent(MainActivity.this, add_item.class);
+            //startActivityForResult(intent, ADD_NOTE_REQ_CODE);
         }
 
         return super.onOptionsItemSelected(item);
@@ -150,5 +149,37 @@ public class MainActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
         outState.putSerializable(this.TODO_LIST_TAG, (Serializable) ToDoItemList);
     }
+
+    private void startAddDialog() {
+
+        final AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
+                .setView(R.layout.activity_add_item)
+                .show();
+
+        FloatingActionButton fab = (FloatingActionButton) dialog.findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent();
+                EditText headerView = (EditText) dialog.findViewById(R.id.headerText);
+                EditText bodyView = (EditText) dialog.findViewById(R.id.bodyText);
+
+                String newBody = bodyView.getText().toString();
+                String newHeader = headerView.getText().toString();
+
+                if (newHeader.equals("")) {
+                    newHeader = "No Subject";
+                    if (newBody.equals("")) {
+                        dialog.cancel();
+                    }
+                }
+                ToDoItemList.add(new ToDoItem(newHeader, newBody));
+                adapter.notifyDataSetChanged();
+                dialog.cancel();
+
+            }
+        });
+    }
+
 }
 
