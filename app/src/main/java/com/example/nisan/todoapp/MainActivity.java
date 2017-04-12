@@ -31,8 +31,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static Pattern callPattern = Pattern.compile("(?i)\\s*call\\s*(\\d*)");
     private List<ToDoItem> ToDoItemList;
     private final String TODO_LIST_TAG = "todo_list_tag";
     private final static int ADD_NOTE_REQ_CODE = 1;
@@ -75,24 +79,38 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
-                AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
-                        .setMessage("Are you sure you want to delete?")
-                        .setTitle("Delete Item")
-                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this)
+                        .setMessage("Which Action Would You Like To Perform?")
+                        .setTitle("Option List")
+                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 return;
                             }
                         })
-                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        .setPositiveButton("Delete Item", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                Log.v("click!", "clieckckck");
                                 ToDoItemList.remove(position);
                                 adapter.notifyDataSetChanged();
                             }
-                        })
-                        .show();
+                        });
+
+                final Matcher callMatch = callPattern.matcher(ToDoItemList.get(position).getHeader());
+
+                if (callMatch.find() && callMatch.group(1).length() > 0) {
+                    dialog.setNeutralButton("Make The Call", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            Intent dial = new Intent(Intent.ACTION_DIAL,
+                                    Uri.parse("tel:" + callMatch.group(1)));
+                            startActivity(dial);
+                            dialog.cancel();
+                        }
+                    });
+                }
+                dialog.show();
+
                 return true;
             }
 
