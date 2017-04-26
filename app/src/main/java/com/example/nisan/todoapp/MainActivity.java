@@ -24,12 +24,21 @@ import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.server.converter.StringToIntConverter;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,6 +56,8 @@ public class MainActivity extends AppCompatActivity {
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
+
+    DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
         adapter = new ToDoListAdapter(this, R.layout.todo_item, ToDoItemList);
         ToDoView.setAdapter(adapter);
 
-
         ToDoView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
 
             @Override
@@ -92,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 ToDoItemList.remove(position);
+//                                dbRef.removeValue();
                                 adapter.notifyDataSetChanged();
                             }
                         });
@@ -116,9 +127,37 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
+
+        dbRef.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                ToDoItemList.add(dataSnapshot.getValue(ToDoItem.class));
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                //Editing still not supported
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                ToDoItemList.remove(dataSnapshot.getValue(ToDoItem.class));
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                //Moving still not supported
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                //for debug
+            }
+        });
     }
 
     @Override
@@ -183,8 +222,14 @@ public class MainActivity extends AppCompatActivity {
                 Calendar cal = Calendar.getInstance();
                 cal.set(dateView.getYear(), dateView.getMonth(), dateView.getDayOfMonth());
 
-                ToDoItemList.add(new ToDoItem(newHeader, newBody, cal.getTime()));
+                ToDoItem toAdd = new ToDoItem(newHeader, newBody, cal.getTime());
+                ToDoItemList.add(toAdd);
+
                 adapter.notifyDataSetChanged();
+                Map<String, Object> map = new HashMap<>();
+                map.put(dbRef.push().getKey(), ToDoItem.parseItem(toAdd));
+                dbRef.updateChildren(map);
+
                 dialog.cancel();
 
             }

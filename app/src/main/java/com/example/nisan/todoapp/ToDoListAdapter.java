@@ -44,8 +44,8 @@ public class ToDoListAdapter extends ArrayAdapter<ToDoItem> {
 
         header.setText(currItem.getHeader());
         body.setText(currItem.getBody());
-        checked.setChecked(currItem.isChecked());
-        date.setText(currItem.getDueTime());
+        checked.setChecked(currItem.getIsChecked());
+        date.setText(currItem.getTime());
 
         checked.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
