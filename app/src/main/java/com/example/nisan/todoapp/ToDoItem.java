@@ -27,6 +27,10 @@ public class ToDoItem implements Serializable {
         this.body = body;
     }
 
+    public ToDoItem(byte[] payload) {
+
+    }
+
     public String getDueTime() {
         return ToDoItem.timeFormat.format(dueTime);
     }

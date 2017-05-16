@@ -3,7 +3,12 @@ package com.example.nisan.todoapp;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.NfcEvent;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.os.PersistableBundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -19,6 +24,7 @@ import android.widget.AdapterView;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -34,7 +40,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity {
+import static android.nfc.NdefRecord.createMime;
+
+public class MainActivity extends AppCompatActivity implements NfcAdapter.CreateNdefMessageCallback {
 
     private static Pattern callPattern = Pattern.compile("(?i)\\s*call\\s*(\\d*)");
     private List<ToDoItem> ToDoItemList;
@@ -42,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
     private final static int ADD_NOTE_REQ_CODE = 1;
     private final static int REM_NOTE_REQ_CODE = 2;
     private ToDoListAdapter adapter;
+
+    private NfcAdapter mNfcAdapter;
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -69,6 +79,12 @@ public class MainActivity extends AppCompatActivity {
             ToDoItemList = new ArrayList<>();
         }
 
+        mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        if (mNfcAdapter == null) {
+            Toast.makeText(this, "NFC is not available", Toast.LENGTH_LONG).show();
+        } else {
+            mNfcAdapter.setNdefPushMessageCallback(this, this);
+        }
 
         ListView ToDoView = (ListView) findViewById(R.id.listView);
         adapter = new ToDoListAdapter(this, R.layout.todo_item, ToDoItemList);
@@ -199,5 +215,51 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    public NdefMessage createNdefMessage(NfcEvent event) {
+
+        NdefRecord[] records = new NdefRecord[ToDoItemList.size()];
+        for (int i = 0; i < records.length; i++) {
+            records[i] = createMime("application/vnd.com.example.android.beam",
+                    ToDoItemList.get(i).getBody().getBytes());
+        }
+
+        NdefMessage msg = new NdefMessage(records);
+        return msg;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mNfcAdapter == null) {
+            return;
+        }
+        // Check to see that the Activity started due to an Android Beam
+        if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) {
+            readNfc(getIntent());
+        }
+    }
+    @Override
+    public void onNewIntent(Intent intent) {
+        // onResume gets called after this to handle the intent
+        setIntent(intent);
+    }
+
+    /**
+     * parses the recieved ndef msg and switches content
+     * @param intent calling intent
+     */
+    private void readNfc(Intent intent) {
+
+        Parcelable[] rawMsgs = intent.getParcelableArrayExtra(
+                NfcAdapter.EXTRA_NDEF_MESSAGES);
+        // only one message sent during the beam
+        NdefMessage msg = (NdefMessage) rawMsgs[0];
+        ToDoItemList.clear();
+        NdefRecord[] records = msg.getRecords();
+        for (int i = 0; i < records.length; i++) {
+            ToDoItemList.add(new ToDoItem(records[i].getPayload()));
+        }
+    }
 }
 
