@@ -1,12 +1,15 @@
 package com.example.nisan.todoapp;
 
+import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcEvent;
+import android.nfc.tech.NfcF;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.os.PersistableBundle;
@@ -84,6 +87,11 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
             Toast.makeText(this, "NFC is not available", Toast.LENGTH_LONG).show();
         } else {
             mNfcAdapter.setNdefPushMessageCallback(this, this);
+
+
+            if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) {
+                readNfc(getIntent());
+            }
         }
 
         ListView ToDoView = (ListView) findViewById(R.id.listView);
@@ -227,6 +235,13 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
         NdefMessage msg = new NdefMessage(records);
         return msg;
     }
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (mNfcAdapter != null) {
+            mNfcAdapter.disableForegroundDispatch(this);
+        }
+    }
 
     @Override
     public void onResume() {
@@ -234,6 +249,18 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
         if (mNfcAdapter == null) {
             return;
         }
+        IntentFilter ndef = new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED);
+        try {
+            ndef.addDataType("text/plain");
+        }
+        catch (IntentFilter.MalformedMimeTypeException e) {
+            throw new RuntimeException("fail", e);
+        }
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+        mNfcAdapter.enableForegroundDispatch(this, pendingIntent,
+                new IntentFilter[] {ndef, },
+                new String[][] { new String[] { NfcF.class.getName() }} );
         // Check to see that the Activity started due to an Android Beam
         if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) {
             readNfc(getIntent());
@@ -255,7 +282,11 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
                 NfcAdapter.EXTRA_NDEF_MESSAGES);
         // only one message sent during the beam
         NdefMessage msg = (NdefMessage) rawMsgs[0];
-        ToDoItemList.clear();
+        if ("text/plain".equals(intent.getType())) {
+            ToDoItemList.add(new ToDoItem("---Input Stream Notes ---".getBytes()));
+        } else {
+            ToDoItemList.clear();
+        }
         NdefRecord[] records = msg.getRecords();
         for (int i = 0; i < records.length; i++) {
             ToDoItemList.add(new ToDoItem(records[i].getPayload()));

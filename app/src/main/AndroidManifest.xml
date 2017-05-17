@@ -23,6 +23,12 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/vnd.com.example.android.beam" />
+            </intent-filter>
+
 
         </activity>
         <!-- ATTENTION: This was auto-generated to add Google Play services to your project for
