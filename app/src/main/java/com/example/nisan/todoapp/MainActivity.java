@@ -5,10 +5,13 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
+import android.nfc.FormatException;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcEvent;
+import android.nfc.Tag;
+import android.nfc.tech.Ndef;
 import android.nfc.tech.NfcF;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -34,11 +37,14 @@ import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -265,7 +271,31 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
         if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) {
             readNfc(getIntent());
         }
+        if(NfcAdapter.ACTION_TAG_DISCOVERED.equals(getIntent().getAction())){
+            Tag tag = getIntent().getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            NdefMessage toSend = parseListToNdef(tag);
+
+            try {
+                Ndef ndefTag = Ndef.get(tag);
+                ndefTag.connect();
+                ndefTag.writeNdefMessage(toSend);
+                ndefTag.close();
+            } catch (IOException | FormatException e) {
+                e.printStackTrace();
+            }
+
+            Toast.makeText(this, "you've just shared your list!", Toast.LENGTH_LONG ).show();
+        }
     }
+
+    private NdefMessage parseListToNdef(Parcelable parcelableExtra) {
+        NdefRecord[] records = new NdefRecord[ToDoItemList.size()];
+        for (int i = 0; i < records.length; i++) {
+            records[i] = createRecord(ToDoItemList.get(i).getBody());
+        }
+        return new NdefMessage(records);
+    }
+
     @Override
     public void onNewIntent(Intent intent) {
         // onResume gets called after this to handle the intent
@@ -292,5 +322,29 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
             ToDoItemList.add(new ToDoItem(records[i].getPayload()));
         }
     }
+    private NdefRecord createRecord(String content) {
+        try {
+            // Get UTF-8 byte
+            byte[] lang = Locale.getDefault().getLanguage().getBytes("UTF-8");
+            byte[] text = content.getBytes("UTF-8"); // Content in UTF-8
+
+            int langSize = lang.length;
+            int textLength = text.length;
+
+            ByteArrayOutputStream payload = new ByteArrayOutputStream(1 + langSize + textLength);
+            payload.write((byte) (langSize & 0x1F));
+            payload.write(lang, 0, langSize);
+            payload.write(text, 0, textLength);
+            return (new NdefRecord(NdefRecord.TNF_WELL_KNOWN,
+                    NdefRecord.RTD_TEXT, new byte[0],
+                    payload.toByteArray()));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
 }
+
 
